@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Datasource is SQLite for zero-config local development. The schema below
+// intentionally avoids SQLite-only quirks so switching `provider` to
+// "postgresql" (Supabase / Vercel Postgres / Neon, etc.) for production is a
+// one-line change plus `prisma migrate deploy` — see the README.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  ATTENDANT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(ATTENDANT)
+  createdAt    DateTime @default(now())
+}
+
+model Zone {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  covered     Boolean       @default(false)
+  spots       ParkingSpot[]
+  createdAt   DateTime      @default(now())
+}
+
+enum SpotType {
+  REGULAR
+  HANDICAP
+  RESERVED
+  MOTORCYCLE
+}
+
+model ParkingSpot {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  type      SpotType  @default(REGULAR)
+  zone      Zone      @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  zoneId    String
+  sessions  ParkingSession[]
+  createdAt DateTime  @default(now())
+
+  @@index([zoneId])
+}
+
+// Single active rate configuration edited by admins. Kept as a table (rather
+// than hardcoded constants) so it's editable without a deploy, but the app
+// only ever reads the most recently created row as "active".
+model RateConfig {
+  id                String   @id @default(cuid())
+  hourlyRateCents   Int
+  gracePeriodMins   Int      @default(10)
+  dailyMaxCents     Int
+  createdAt         DateTime @default(now())
+}
+
+model MonthlySubscriber {
+  id          String   @id @default(cuid())
+  plate       String   @unique
+  holderName  String
+  validUntil  DateTime
+  createdAt   DateTime @default(now())
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+model ParkingSession {
+  id            String        @id @default(cuid())
+  plate         String
+  spot          ParkingSpot?  @relation(fields: [spotId], references: [id])
+  spotId        String?
+  entryAt       DateTime      @default(now())
+  exitAt        DateTime?
+  feeCents      Int?
+  wasSubscriber Boolean       @default(false)
+  status        SessionStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+
+  @@index([spotId])
+  @@index([status])
+  @@index([plate])
+}
