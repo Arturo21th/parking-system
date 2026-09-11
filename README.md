@@ -36,12 +36,14 @@ development workflow.
 Requires Node.js 22+.
 
 ```bash
-npm install
+npm install                    # also generates the Prisma client (postinstall)
 cp .env.example .env          # defaults already work for local SQLite dev
 npx prisma migrate dev         # creates prisma/dev.db and applies the schema
 npm run seed                   # demo user, zones/spots, subscribers, history
 npm run dev                    # http://localhost:3001
 ```
+
+> If you ran `npm install` before pulling this fix and hit `Cannot find module '.../generated/prisma/client'`, just run `npx prisma generate` once (or `npm install` again) to fix it.
 
 **Demo login:** `admin@parking.demo` / `admin123`
 
